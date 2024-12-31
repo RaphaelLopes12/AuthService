@@ -8,6 +8,7 @@ import { Repository } from 'typeorm';
 import { User } from './entities/user.entity';
 import { TokenBlacklist } from '../auth/entities/token-blacklist.entity';
 import * as bcrypt from 'bcrypt';
+import { ZeroBounceService } from './zero-bounce.service';
 
 @Injectable()
 export class UsersService {
@@ -17,9 +18,15 @@ export class UsersService {
 
     @InjectRepository(TokenBlacklist)
     private readonly tokenBlacklistRepository: Repository<TokenBlacklist>,
+
+    private readonly zeroBounceService: ZeroBounceService,
   ) {}
 
   async createUser(email: string, password: string): Promise<User> {
+    const isValidEmail = await this.validateEmail(email);
+    if (!isValidEmail) {
+      throw new ConflictException('Invalid email address');
+    }
     const existingUser = await this.usersRepository.findOne({
       where: { email },
     });
@@ -94,5 +101,9 @@ export class UsersService {
       throw new NotFoundException('User not found');
     }
     return true;
+  }
+
+  async validateEmail(email: string): Promise<boolean> {
+    return this.zeroBounceService.validateEmail(email);
   }
 }

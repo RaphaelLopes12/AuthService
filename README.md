@@ -4,10 +4,11 @@ Um microsserviço de autenticação utilizando **Node.js** com **NestJS** e **Ty
 
 ## Funcionalidades
 
-- **Registro de Usuário:** Permite registrar novos usuários com validação de e-mail único.
+- **Registro de Usuário:** Permite registrar novos usuários com validação de e-mail único e validação em tempo real via [Zero Bounce](https://www.zerobounce.net/).
 - **Login:** Gera tokens de acesso (JWT) e refresh token ao autenticar o usuário.
 - **Logout:** Invalida o refresh token ao deslogar.
 - **Renovação de Token:** Permite gerar um novo token de acesso válido a partir de um refresh token.
+- **Validação de E-mails:** Integração com a API [Zero Bounce](https://www.zerobounce.net/) para validar endereços de e-mail antes do registro.
 - **Health Check:** Endpoint para verificar se o serviço está online.
 
 ## Tecnologias Utilizadas
@@ -17,6 +18,7 @@ Um microsserviço de autenticação utilizando **Node.js** com **NestJS** e **Ty
 - **TypeORM**
 - **PostgreSQL**
 - **JWT (JSON Web Tokens)**
+- **Zero Bounce**
 - **ESLint e Prettier**
 
 ## Requisitos
@@ -24,6 +26,7 @@ Um microsserviço de autenticação utilizando **Node.js** com **NestJS** e **Ty
 - **Node.js**: v16+
 - **npm** ou **yarn**
 - **PostgreSQL**
+- **Chave de API do Zero Bounce**
 
 ## Configuração e Instalação
 
@@ -52,6 +55,7 @@ Um microsserviço de autenticação utilizando **Node.js** com **NestJS** e **Ty
    DB_USERNAME=<seu-usuario>
    DB_PASSWORD=<sua-senha>
    DB_NAME=auth_service
+   ZERO_BOUNCE_API_KEY=<sua-chave-api-zero-bounce>
    ```
 
 4. Inicialize o banco de dados:
@@ -70,8 +74,10 @@ Um microsserviço de autenticação utilizando **Node.js** com **NestJS** e **Ty
 
 ### **Autenticação**
 
+#### Registro de Usuário com Validação de E-mail
 - **POST /auth/register**
   - Registro de um novo usuário.
+  - Realiza a validação do endereço de e-mail via API Zero Bounce antes de criar o usuário.
   - Payload:
     ```json
     {
@@ -79,56 +85,34 @@ Um microsserviço de autenticação utilizando **Node.js** com **NestJS** e **Ty
       "password": "password123"
     }
     ```
+  - Respostas:
+    - **Sucesso**:
+      ```json
+      {
+        "id": "123",
+        "email": "example@example.com"
+      }
+      ```
+    - **Erro - E-mail inválido**:
+      ```json
+      {
+        "statusCode": 400,
+        "message": "Invalid email address.",
+        "error": "Bad Request"
+      }
+      ```
+    - **Erro - E-mail já em uso**:
+      ```json
+      {
+        "statusCode": 409,
+        "message": "Email is already in use.",
+        "error": "Conflict"
+      }
+      ```
 
-- **POST /auth/login**
-  - Login do usuário e geração de tokens.
-  - Payload:
-    ```json
-    {
-      "email": "example@example.com",
-      "password": "password123"
-    }
-    ```
-  - Retorno:
-    ```json
-    {
-      "access_token": "...",
-      "refresh_token": "..."
-    }
-    ```
+### **Demais Endpoints**
 
-- **POST /auth/refresh-token**
-  - Gera um novo token de acesso usando o refresh token.
-  - Payload:
-    ```json
-    {
-      "userId": "<user-id>",
-      "refreshToken": "<refresh-token>"
-    }
-    ```
-
-- **POST /auth/logout**
-  - Invalida o refresh token do usuário ao deslogar.
-  - Payload:
-    ```json
-    {
-      "refreshToken": "<refresh-token>"
-    }
-    ```
-
-### **Health Check**
-
-- **GET /health**
-  - Retorna o status da aplicação.
-
-### **Perfil do Usuário**
-
-- **POST /auth/profile**
-  - Retorna informações do usuário autenticado.
-  - Requer o token de acesso no cabeçalho:
-    ```bash
-    Authorization: Bearer <access_token>
-    ```
+Os outros endpoints permanecem os mesmos, conforme documentado na seção anterior.
 
 ## Testes
 
@@ -150,19 +134,9 @@ Um microsserviço de autenticação utilizando **Node.js** com **NestJS** e **Ty
    npm run test:cov
    ```
 
-## Lint e Formatação
+## Observação sobre a Validação de E-mails
 
-- Para verificar o lint:
-
-  ```bash
-  npm run lint
-  ```
-
-- Para corrigir automaticamente problemas de lint:
-
-  ```bash
-  npm run lint:fix
-  ```
+A API Zero Bounce é usada para validar e-mails em tempo real durante o registro. Certifique-se de configurar a chave de API corretamente no arquivo `.env`. Caso a API do Zero Bounce esteja indisponível, a validação será interrompida, e nenhum usuário será registrado com e-mails inválidos.
 
 ## Licença
 

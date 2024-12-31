@@ -2,6 +2,7 @@ import { Controller, Post, Body, UseGuards, Request } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { UsersService } from '../users/users.service';
+import { BadRequestException } from '@nestjs/common';
 
 @Controller('auth')
 export class AuthController {
@@ -12,6 +13,10 @@ export class AuthController {
 
   @Post('register')
   async register(@Body() body: { email: string; password: string }) {
+    const isValidEmail = await this.usersService.validateEmail(body.email);
+    if (!isValidEmail) {
+      throw new BadRequestException('Invalid email address.');
+    }
     return this.usersService.createUser(body.email, body.password);
   }
 
