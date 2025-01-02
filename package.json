@@ -30,6 +30,7 @@
     "@nestjs/typeorm": "^10.0.2",
     "axios": "^1.7.9",
     "bcrypt": "^5.1.1",
+    "date-fns": "^4.1.0",
     "dotenv": "^16.4.7",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",

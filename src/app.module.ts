@@ -4,6 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { User } from './users/entities/user.entity';
+import { Address } from './addresses/entities/address.entity';
 import { TokenBlacklist } from './auth/entities/token-blacklist.entity';
 import { HealthModule } from './health/health.module';
 
@@ -16,7 +17,7 @@ import { HealthModule } from './health/health.module';
       username: process.env.DB_USERNAME,
       password: process.env.DB_PASSWORD,
       database: process.env.DB_NAME,
-      entities: [User, TokenBlacklist],
+      entities: [User, TokenBlacklist, Address],
       synchronize: true,
       logging: true,
     }),

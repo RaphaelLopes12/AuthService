@@ -1,4 +1,5 @@
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+import { Address } from '../../addresses/entities/address.entity';
 
 @Entity()
 export class User {
@@ -13,4 +14,22 @@ export class User {
 
   @Column({ nullable: true })
   refreshToken?: string;
+
+  @Column()
+  firstName: string;
+
+  @Column()
+  lastName: string;
+
+  @Column({ nullable: true })
+  birthDate: Date;
+
+  @Column({ nullable: true })
+  cpfOrCnpj: string;
+
+  @Column({ nullable: true })
+  phoneNumber: string;
+
+  @OneToMany(() => Address, (address) => address.user, { cascade: true })
+  addresses: Address[];
 }
