@@ -104,7 +104,28 @@ export class AuthController {
 
   @UseGuards(JwtAuthGuard)
   @Post('profile')
-  getProfile(@Request() req) {
-    return req.user;
+  async getProfile(@Request() req) {
+    const userId = req.user.userId;
+
+    const user = await this.usersService.findByIdWithRelations(userId);
+
+    return {
+      id: user.id,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      birthDate: user.birthDate,
+      cpfOrCnpj: user.cpfOrCnpj,
+      phoneNumber: user.phoneNumber,
+      addresses: user.addresses.map((address) => ({
+        postalCode: address.postalCode,
+        street: address.street,
+        number: address.number,
+        complement: address.complement,
+        neighborhood: address.neighborhood,
+        city: address.city,
+        state: address.state,
+      })),
+    };
   }
 }

@@ -144,4 +144,17 @@ export class UsersService {
 
     return true;
   }
+
+  async findByIdWithRelations(id: string): Promise<User> {
+    const user = await this.usersRepository.findOne({
+      where: { id },
+      relations: ['addresses'],
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    return user;
+  }
 }
