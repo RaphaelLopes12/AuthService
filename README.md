@@ -1,14 +1,16 @@
 # Auth Service
 
-Um microsserviço de autenticação utilizando **Node.js** com **NestJS** e **TypeORM**, fornecendo funcionalidades como registro de usuários, login, logout, renovação de tokens e gerenciamento de tokens de acesso e refresh.
+Um microsserviço de autenticação utilizando **Node.js** com **NestJS** e **TypeORM**, fornecendo funcionalidades como registro de usuários, login, logout, renovação de tokens e gerenciamento de tokens de acesso e refresh, com suporte a informações detalhadas de perfil, incluindo endereço.
 
 ## Funcionalidades
 
-- **Registro de Usuário:** Permite registrar novos usuários com validação de e-mail único e validação em tempo real via [Zero Bounce](https://www.zerobounce.net/).
+- **Registro de Usuário:** Permite registrar novos usuários com validação de e-mail único e CPF/CNPJ.
+- **Gerenciamento de Endereços:** Registra e armazena o endereço do usuário, com vinculação à tabela de usuários.
 - **Login:** Gera tokens de acesso (JWT) e refresh token ao autenticar o usuário.
 - **Logout:** Invalida o refresh token ao deslogar.
 - **Renovação de Token:** Permite gerar um novo token de acesso válido a partir de um refresh token.
-- **Validação de E-mails:** Integração com a API [Zero Bounce](https://www.zerobounce.net/) para validar endereços de e-mail antes do registro.
+- **Validação de E-mails:** Integração opcional com a API [Zero Bounce](https://www.zerobounce.net/) para validação de endereços de e-mail antes do registro.
+- **Validação de CPF/CNPJ:** Verifica a validade do CPF ou CNPJ fornecido durante o registro.
 - **Health Check:** Endpoint para verificar se o serviço está online.
 
 ## Tecnologias Utilizadas
@@ -18,7 +20,7 @@ Um microsserviço de autenticação utilizando **Node.js** com **NestJS** e **Ty
 - **TypeORM**
 - **PostgreSQL**
 - **JWT (JSON Web Tokens)**
-- **Zero Bounce**
+- **Zero Bounce** (opcional)
 - **ESLint e Prettier**
 
 ## Requisitos
@@ -26,7 +28,7 @@ Um microsserviço de autenticação utilizando **Node.js** com **NestJS** e **Ty
 - **Node.js**: v16+
 - **npm** ou **yarn**
 - **PostgreSQL**
-- **Chave de API do Zero Bounce**
+- **Chave de API do Zero Bounce** (opcional)
 
 ## Configuração e Instalação
 
@@ -74,14 +76,55 @@ Um microsserviço de autenticação utilizando **Node.js** com **NestJS** e **Ty
 
 ### **Autenticação**
 
-#### Registro de Usuário com Validação de E-mail
+#### Registro de Usuário com Validação de CPF/CNPJ e Endereço
 - **POST /auth/register**
-  - Registro de um novo usuário.
-  - Realiza a validação do endereço de e-mail via API Zero Bounce antes de criar o usuário.
+  - Registro de um novo usuário com validação de e-mail e CPF/CNPJ únicos, além de armazenamento do endereço fornecido.
   - Payload:
     ```json
     {
-      "email": "example@example.com",
+      "firstName": "John",
+      "lastName": "Doe",
+      "email": "johndoe@example.com",
+      "password": "password123",
+      "confirmPassword": "password123",
+      "birthDate": "25/02/2000",
+      "phoneNumber": "555123456",
+      "cpfOrCnpj": "12345678909",
+      "address": {
+        "postalCode": "12345678",
+        "street": "Rua Exemplo",
+        "number": "100",
+        "complement": "Apto 101",
+        "neighborhood": "Centro",
+        "city": "São Paulo",
+        "state": "SP"
+      }
+    }
+    ```
+  - Respostas:
+    - **Sucesso**:
+      ```json
+      {
+        "userId": "123",
+        "message": "User registered successfully"
+      }
+      ```
+    - **Erro - CPF ou CNPJ inválido**:
+      ```json
+      {
+        "statusCode": 400,
+        "message": "Invalid CPF or CNPJ.",
+        "error": "Bad Request"
+      }
+      ```
+
+#### Login
+- **POST /auth/login**
+  - Autentica o usuário e retorna os tokens de acesso e refresh.
+  - Payload:
+    ```json
+    {
+      "email": "johndoe@example.com",
       "password": "password123"
     }
     ```
@@ -89,30 +132,68 @@ Um microsserviço de autenticação utilizando **Node.js** com **NestJS** e **Ty
     - **Sucesso**:
       ```json
       {
+        "access_token": "<jwt-token>",
+        "refresh_token": "<jwt-refresh-token>"
+      }
+      ```
+    - **Erro - Credenciais inválidas**:
+      ```json
+      {
+        "statusCode": 401,
+        "message": "Invalid email or password",
+        "error": "Unauthorized"
+      }
+      ```
+
+#### Perfil do Usuário
+- **POST /auth/profile**
+  - Retorna as informações completas do perfil do usuário logado, incluindo endereços.
+  - Requer um token JWT válido no cabeçalho Authorization.
+  - Respostas:
+    - **Sucesso**:
+      ```json
+      {
         "id": "123",
-        "email": "example@example.com"
-      }
-      ```
-    - **Erro - E-mail inválido**:
-      ```json
-      {
-        "statusCode": 400,
-        "message": "Invalid email address.",
-        "error": "Bad Request"
-      }
-      ```
-    - **Erro - E-mail já em uso**:
-      ```json
-      {
-        "statusCode": 409,
-        "message": "Email is already in use.",
-        "error": "Conflict"
+        "firstName": "John",
+        "lastName": "Doe",
+        "email": "johndoe@example.com",
+        "birthDate": "2000-02-25T02:00:00.000Z",
+        "cpfOrCnpj": "12345678909",
+        "phoneNumber": "555123456",
+        "addresses": [
+          {
+            "postalCode": "12345678",
+            "street": "Rua Exemplo",
+            "number": "100",
+            "complement": "Apto 101",
+            "neighborhood": "Centro",
+            "city": "São Paulo",
+            "state": "SP"
+          }
+        ]
       }
       ```
 
-### **Demais Endpoints**
+#### Logout
+- **POST /auth/logout**
+  - Invalida o refresh token do usuário logado.
+  - Payload:
+    ```json
+    {
+      "refreshToken": "<jwt-refresh-token>"
+    }
+    ```
 
-Os outros endpoints permanecem os mesmos, conforme documentado na seção anterior.
+#### Renovação de Token
+- **POST /auth/refresh-token**
+  - Gera um novo token de acesso com base no refresh token válido.
+  - Payload:
+    ```json
+    {
+      "userId": "123",
+      "refreshToken": "<jwt-refresh-token>"
+    }
+    ```
 
 ## Testes
 
@@ -141,3 +222,4 @@ A API Zero Bounce é usada para validar e-mails em tempo real durante o registro
 ## Licença
 
 Este projeto está sob a licença MIT. Consulte o arquivo [LICENSE](LICENSE) para mais informações.
+
